@@ -13,7 +13,7 @@ import (
 
 func TestSessionOk(t *testing.T) {
 	db := createTmpDbWithAllMigrationsApplied()
-	session := NewSqliteSessionProvider(db).Provide()
+	session := NewSqliteSessionProvider(db).Provide(context.TODO())
 	ctx := context.TODO()
 	txErr := session.Transaction(ctx, func(ctx context.Context) error {
 		if err := addRowInMigrationTableAndReturnOk(ctx, db, 10_000); err != nil {
@@ -29,7 +29,7 @@ func TestSessionOk(t *testing.T) {
 
 func TestSessionError(t *testing.T) {
 	db := createTmpDbWithAllMigrationsApplied()
-	session := NewSqliteSessionProvider(db).Provide()
+	session := NewSqliteSessionProvider(db).Provide(context.TODO())
 	ctx := context.TODO()
 	txErr := session.Transaction(ctx, func(ctx context.Context) error {
 		if err := addRowInMigrationTableAndReturnOk(ctx, db, 10_000); err != nil {
@@ -51,7 +51,7 @@ func TestSessionError(t *testing.T) {
 
 func TestSessionError2(t *testing.T) {
 	db := createTmpDbWithAllMigrationsApplied()
-	session := NewSqliteSessionProvider(db).Provide()
+	session := NewSqliteSessionProvider(db).Provide(context.TODO())
 	ctx := context.TODO()
 	txErr := session.Transaction(ctx, func(ctx context.Context) error {
 		if err := addRowInMigrationTableAndReturnOk(ctx, db, 10_000); err != nil {

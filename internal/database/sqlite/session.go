@@ -121,6 +121,6 @@ func NewSqliteSessionProvider(db *sql.DB) *SqliteSessionProvider {
 	}
 }
 
-func (sp *SqliteSessionProvider) Provide() transaction.Session {
+func (sp *SqliteSessionProvider) Provide(_ context.Context) transaction.Session {
 	return newSqliteSession(sp.db)
 }
