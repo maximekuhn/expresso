@@ -1,0 +1,28 @@
+package forms
+
+templ LoginForm() {
+	<div>
+		<div id="login-form-error-box"></div>
+		<form
+			hx-post="/login"
+			hx-target-4*="#login-form-error-box"
+		>
+			<div>
+				<label for="email">Email</label>
+				<input type="email" id="email" name="email" placeholder="john.doe@gmail.com" required/>
+			</div>
+			<div>
+				<label for="password">Password</label>
+				<input type="password" id="password" name="password" placeholder="********" required/>
+			</div>
+			<div>
+				<button type="submit">
+					Login
+				</button>
+			</div>
+		</form>
+		<p>
+			No account? Create one <a href="/register">here</a>
+		</p>
+	</div>
+}

@@ -15,6 +15,8 @@ type server struct {
 }
 
 func (s *server) setup() {
+	handleAssets()
+
 	l := logger.Setup()
 
 	requestIdMw := middleware.NewRequestIdMiddleware()
@@ -26,6 +28,13 @@ func (s *server) setup() {
 
 	loginHandler := handlers.NewLoginHandler(l, s.app.loginUsecaseHandler)
 	http.Handle("/login", chain.Middleware(loginHandler))
+
+}
+
+func handleAssets() {
+	fs := http.FileServer(http.Dir("internal/webapp/ui/assets/"))
+	http.Handle("/assets/", http.StripPrefix("/assets/", fs))
+
 }
 
 func Run(db *sql.DB) error {

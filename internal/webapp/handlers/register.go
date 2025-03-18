@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 
+	"github.com/maximekuhn/expresso/internal/auth"
 	"github.com/maximekuhn/expresso/internal/logger"
 	usecaseUser "github.com/maximekuhn/expresso/internal/usecase/user"
 	"github.com/maximekuhn/expresso/internal/webapp/middleware"
@@ -66,9 +68,29 @@ func (h *RegisterHandler) register(w http.ResponseWriter, r *http.Request) {
 		Password:        password,
 		PasswordConfirm: passwordConfirm,
 	}); err != nil {
-		// TODO: check error type and handle it properly
-		l.Error("failed to register user", slog.String("err", err.Error()))
-		w.WriteHeader(http.StatusInternalServerError)
+		h.handleError(l, w, r, err)
 		return
 	}
+
+	w.Header().Add("HX-Redirect", "/login")
+	l.Info("user registered successfully")
+}
+
+func (_ *RegisterHandler) handleError(l *slog.Logger, w http.ResponseWriter, r *http.Request, err error) {
+	var passwordAndConfirmationDontMatchError usecaseUser.PasswordAndConfirmationDontMatchError
+	if errors.As(err, &passwordAndConfirmationDontMatchError) {
+		l.Info("password and confirmation don't match")
+		returnBadRequestAndBoxError("Password and confirmation must match", l, w, r)
+		return
+	}
+
+	var entryAlreadyExistsError auth.EntryAlreadyExistsError
+	if errors.As(err, &entryAlreadyExistsError) {
+		l.Info("email already taken")
+		returnBadRequestAndBoxError("This email is not available. Try another one", l, w, r)
+		return
+	}
+
+	l.Error("internal error", slog.String("err", err.Error()))
+	w.WriteHeader(http.StatusInternalServerError)
 }

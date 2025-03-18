@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -17,11 +18,11 @@ type LoginHandler struct {
 }
 
 func NewLoginHandler(
-	logger *slog.Logger,
+	l *slog.Logger,
 	loginUseCase *usecaseUser.LoginUseCaseHandler,
 ) *LoginHandler {
 	return &LoginHandler{
-		logger:       logger,
+		logger:       l.With(slog.String(logger.LoggerNameField, "LoginHandler")),
 		loginUseCase: loginUseCase,
 	}
 }
@@ -68,13 +69,31 @@ func (h *LoginHandler) login(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		// TODO: check error and respond accordingly
-		l.Error("failed to login", slog.String("err", err.Error()))
-		w.WriteHeader(http.StatusInternalServerError)
+		h.handleError(l, w, r, err)
 		return
 	}
 
 	cookie := auth.GenerateCookie(res.SessionId, res.ExpiresAt)
 	http.SetCookie(w, &cookie)
 	w.Header().Add("HX-Redirect", "/")
+	l.Info("user logged in successfully")
+}
+
+func (_ *LoginHandler) handleError(l *slog.Logger, w http.ResponseWriter, r *http.Request, err error) {
+	var badCredentialsError auth.BadCredentialsError
+	if errors.As(err, &badCredentialsError) {
+		l.Info("bad credentials", slog.String("err", badCredentialsError.Error()))
+		returnBadRequestAndBoxError("Invalid credentials", l, w, r)
+		return
+	}
+
+	var entryNotFoundError auth.EntryNotFoundError
+	if errors.As(err, &entryNotFoundError) {
+		l.Info("user not found", slog.String("err", entryNotFoundError.Error()))
+		returnBadRequestAndBoxError("Invalid credentials", l, w, r)
+		return
+	}
+
+	l.Error("internal error", slog.String("err", err.Error()))
+	w.WriteHeader(http.StatusInternalServerError)
 }
