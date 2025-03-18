@@ -10,7 +10,7 @@ type Entry struct {
 	Email            string
 	HashedPassword   []byte
 	UserID           uuid.UUID
-	SessionID        *uuid.UUID
+	SessionID        string
 	SessionExpiresAt *time.Time
 }
 
@@ -18,7 +18,7 @@ func NewEntry(
 	email string,
 	hashedPassword []byte,
 	userID uuid.UUID,
-	sessionID *uuid.UUID,
+	sessionID string,
 	sessionExpiresAt *time.Time,
 ) (*Entry, error) {
 	e := &Entry{
@@ -32,5 +32,17 @@ func NewEntry(
 }
 
 func (e *Entry) validate() error {
+	if e.SessionExpiresAt != nil && e.SessionID == "" {
+		return EntryValidationError{
+			Field:  "SessionID",
+			Reason: "SessionExpiresAt is defined but SessionID is empty",
+		}
+	}
+	if e.SessionID != "" && e.SessionExpiresAt == nil {
+		return EntryValidationError{
+			Field:  "SessionExpiresAt",
+			Reason: "SessionID is defined but SessionExpiresAt is nil",
+		}
+	}
 	return ValidateEmail(e.Email)
 }

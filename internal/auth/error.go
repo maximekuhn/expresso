@@ -29,3 +29,19 @@ func (e EntryAlreadyExistsError) Error() string {
 		e.Email, e.UserID,
 	)
 }
+
+type EntryNotFoundError struct {
+	Email string
+}
+
+func (e EntryNotFoundError) Error() string {
+	return fmt.Sprintf("EntryNotFoundError[Email=%s]", e.Email)
+}
+
+type BadCredentialsError struct {
+	UserID uuid.UUID
+}
+
+func (e BadCredentialsError) Error() string {
+	return fmt.Sprintf("BadCredentialsError[UserID=%s]", e.UserID)
+}

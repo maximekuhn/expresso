@@ -15,11 +15,13 @@ type application struct {
 }
 
 func newApplication(db *sql.DB) *application {
+	idProvider := common.IdProvider{}
+	datetimeProvider := common.DatetimeProvider{}
 	sessionProvider := sqlite.NewSqliteSessionProvider(db)
 	authStore := sqlite.NewAuthStore(db)
-	authService := auth.NewService(authStore)
+	authService := auth.NewService(authStore, datetimeProvider)
 	userStore := sqlite.NewUserStore(db)
-	userService := user.NewService(userStore, common.IdProvider{}, common.DatetimeProvider{})
+	userService := user.NewService(userStore, idProvider, datetimeProvider)
 
 	registerUseCaseHandler := usecaseUser.NewRegisterUseCaseHandler(sessionProvider, authService, userService)
 
