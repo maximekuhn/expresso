@@ -12,6 +12,7 @@ import (
 
 type application struct {
 	registerUsecaseHandler *usecaseUser.RegisterUseCaseHandler
+	loginUsecaseHandler    *usecaseUser.LoginUseCaseHandler
 }
 
 func newApplication(db *sql.DB) *application {
@@ -24,8 +25,10 @@ func newApplication(db *sql.DB) *application {
 	userService := user.NewService(userStore, idProvider, datetimeProvider)
 
 	registerUseCaseHandler := usecaseUser.NewRegisterUseCaseHandler(sessionProvider, authService, userService)
+	loginUsecaseHandler := usecaseUser.NewLoginUseCaseHandler(sessionProvider, authService, datetimeProvider)
 
 	return &application{
 		registerUsecaseHandler: registerUseCaseHandler,
+		loginUsecaseHandler:    loginUsecaseHandler,
 	}
 }

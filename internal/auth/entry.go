@@ -21,12 +21,17 @@ func NewEntry(
 	sessionID string,
 	sessionExpiresAt *time.Time,
 ) (*Entry, error) {
+	var sExpiresAt *time.Time
+	if sessionExpiresAt != nil {
+		utcTime := sessionExpiresAt.UTC()
+		sExpiresAt = &utcTime
+	}
 	e := &Entry{
 		Email:            email,
 		HashedPassword:   hashedPassword,
 		UserID:           userID,
 		SessionID:        sessionID,
-		SessionExpiresAt: sessionExpiresAt,
+		SessionExpiresAt: sExpiresAt,
 	}
 	return e, e.validate()
 }

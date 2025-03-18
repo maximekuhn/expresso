@@ -36,19 +36,19 @@ func (s *Service) CreateAuthEntry(ctx context.Context, email, password string, u
 	return s.store.Save(ctx, *e)
 }
 
-func (s *Service) CreateSession(ctx context.Context, email, password string) (string, error) {
+func (s *Service) CreateSession(ctx context.Context, email, password string) (*Entry, error) {
 	// retrieve entry
 	entry, found, err := s.store.GetByEmail(ctx, email)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if !found {
-		return "", EntryNotFoundError{Email: email}
+		return nil, EntryNotFoundError{Email: email}
 	}
 
 	// compare password with hashed password
 	if !checkPassword(password, entry.HashedPassword) {
-		return "", BadCredentialsError{UserID: entry.UserID}
+		return nil, BadCredentialsError{UserID: entry.UserID}
 	}
 
 	// create session and update the entry
@@ -62,7 +62,7 @@ func (s *Service) CreateSession(ctx context.Context, email, password string) (st
 		&sessionExpiresAt,
 	)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return sessionID, s.store.Update(ctx, *entry, *newEntry)
+	return newEntry, s.store.Update(ctx, *entry, *newEntry)
 }

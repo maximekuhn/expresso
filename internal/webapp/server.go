@@ -23,6 +23,9 @@ func (s *server) setup() {
 
 	registerHandler := handlers.NewRegisterHandler(l, s.app.registerUsecaseHandler)
 	http.Handle("/register", chain.Middleware(registerHandler))
+
+	loginHandler := handlers.NewLoginHandler(l, s.app.loginUsecaseHandler)
+	http.Handle("/login", chain.Middleware(loginHandler))
 }
 
 func Run(db *sql.DB) error {

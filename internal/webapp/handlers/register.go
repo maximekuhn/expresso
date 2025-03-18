@@ -51,6 +51,8 @@ func (h *RegisterHandler) register(w http.ResponseWriter, r *http.Request) {
 	l := logger.UpgradeWithRequestId(r.Context(), middleware.RequestIdKey{}, h.logger)
 	if err := r.ParseForm(); err != nil {
 		l.Error("failed to parse form", slog.String("err", err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	email := r.PostForm.Get("email")
@@ -67,5 +69,6 @@ func (h *RegisterHandler) register(w http.ResponseWriter, r *http.Request) {
 		// TODO: check error type and handle it properly
 		l.Error("failed to register user", slog.String("err", err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 }
