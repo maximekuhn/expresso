@@ -18,7 +18,7 @@ func TestGroupStore_Save(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestGroupStore_SaveDuplicate(t *testing.T) {
+func TestGroupStore_SaveSameId(t *testing.T) {
 	db := createTmpDbWithAllMigrationsApplied()
 	defer db.Close()
 	store := NewGroupStore(db)
@@ -26,8 +26,31 @@ func TestGroupStore_SaveDuplicate(t *testing.T) {
 	err := store.Save(context.TODO(), group1)
 	assert.NoError(t, err)
 
+	// change group name, otherwise AnotherGroupWithSameNameAlreadyExistsError will come up
+	group1.Name = "another name"
 	err = store.Save(context.TODO(), group1)
 	assert.ErrorIs(t, err, group.GroupAlreadyExistsError{ID: group1.ID})
+}
+
+func TestGroupStore_SaveNameNotUnique(t *testing.T) {
+	db := createTmpDbWithAllMigrationsApplied()
+	defer db.Close()
+
+	store := NewGroupStore(db)
+
+	err := store.Save(context.TODO(), group1Empty())
+	assert.NoError(t, err)
+
+	g, err := group.New(
+		uuid.New(),
+		"group 1", // already taken
+		jeff().ID,
+		make([]uuid.UUID, 0),
+		[]byte{1, 2, 3, 4},
+		time.Now(),
+	)
+	err = store.Save(context.TODO(), *g)
+	assert.ErrorIs(t, err, group.AnotherGroupWithSameNameAlreadyExistsError{Name: "group 1"})
 }
 
 func group1Empty() group.Group {

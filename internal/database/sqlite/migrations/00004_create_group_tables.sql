@@ -3,7 +3,8 @@ create table e_group (
     name TEXT NOT NULL,
     owner_id NOT NULL REFERENCES e_user(id) ON DELETE CASCADE,
     created_at DATE NOT NULL,
-    hashed_password BLOB NOT NULL
+    hashed_password BLOB NOT NULL,
+    UNIQUE(name)
 );
 
 create table e_group_member (

@@ -1,0 +1,26 @@
+package forms
+
+templ CreateGroupForm() {
+	<div>
+		<div id="create-group-form-error-box"></div>
+		<form
+			hx-post="/groups"
+			hx-target-4*="#create-group-form-error-box"
+			hx-on::after-request="if (event.detail.xhr.status === 201) location.reload();"
+		>
+			<div>
+				<label for="name">Name</label>
+				<input type="text" id="name" name="name" placeholder="Barcelona trip" required/>
+			</div>
+			<div>
+				<label for="password">Password</label>
+				<input type="password" id="password" name="password" placeholder="********" required/>
+			</div>
+			<div>
+				<button type="submit">
+					Create
+				</button>
+			</div>
+		</form>
+	</div>
+}

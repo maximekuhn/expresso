@@ -1,11 +1,17 @@
 package pages
 
+import "github.com/maximekuhn/expresso/internal/webapp/ui/components/forms"
+
 templ Index() {
 	@Page(indexBody())
 }
 
 templ indexBody() {
 	<div>
-		<h1>Hello, world</h1>
+		<h1>Home</h1>
+		<div>
+			<h2>Create group</h2>
+			@forms.CreateGroupForm()
+		</div>
 	</div>
 }

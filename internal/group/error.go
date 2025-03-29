@@ -25,3 +25,11 @@ type GroupAlreadyExistsError struct {
 func (e GroupAlreadyExistsError) Error() string {
 	return fmt.Sprintf("GroupAlreadyExistsError[id=%s]", e.ID)
 }
+
+type AnotherGroupWithSameNameAlreadyExistsError struct {
+	Name string
+}
+
+func (e AnotherGroupWithSameNameAlreadyExistsError) Error() string {
+	return fmt.Sprintf("AnotherGroupWithSameNameAlreadyExistsError[name=%s]", e.Name)
+}

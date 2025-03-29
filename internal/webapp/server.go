@@ -36,6 +36,9 @@ func (s *server) setup(l *slog.Logger) {
 
 	indexHandler := handlers.NewIndexHandler(l)
 	http.Handle("/", loggedInChain.Middleware(indexHandler))
+
+	groupHandler := handlers.NewGroupHandler(l, s.app.createGroupUsecaseHandler)
+	http.Handle("/groups", loggedInChain.Middleware(groupHandler))
 }
 
 func handleAssets() {

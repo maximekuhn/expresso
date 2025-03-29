@@ -87,6 +87,8 @@ func (mw *LoggedInMiddleware) Middleware(next http.Handler) http.Handler {
 
 		if u == nil {
 			// no user found or no valid session
+			w.Header().Add("HX-Redirect", "/login") // for HTMX callers
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 

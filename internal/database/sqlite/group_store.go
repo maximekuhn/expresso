@@ -36,6 +36,9 @@ func (gs *GroupStore) Save(ctx context.Context, g group.Group) error {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed: e_group.id") {
 			return group.GroupAlreadyExistsError{ID: g.ID}
 		}
+		if strings.Contains(err.Error(), "UNIQUE constraint failed: e_group.name") {
+			return group.AnotherGroupWithSameNameAlreadyExistsError{Name: g.Name}
+		}
 		return err
 	}
 	return checkRowsAffected(res, 1)
