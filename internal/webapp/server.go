@@ -3,9 +3,9 @@ package webapp
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"net/http"
 
-	"github.com/maximekuhn/expresso/internal/logger"
 	"github.com/maximekuhn/expresso/internal/webapp/handlers"
 	"github.com/maximekuhn/expresso/internal/webapp/middleware"
 )
@@ -14,10 +14,8 @@ type server struct {
 	app *application
 }
 
-func (s *server) setup() {
+func (s *server) setup(l *slog.Logger) {
 	handleAssets()
-
-	l := logger.Setup()
 
 	requestIdMw := middleware.NewRequestIdMiddleware()
 	loggerMw := middleware.NewLoggerMiddleware(l)
@@ -45,9 +43,9 @@ func handleAssets() {
 
 }
 
-func Run(db *sql.DB) error {
+func Run(db *sql.DB, l *slog.Logger) error {
 	server := &server{app: newApplication(db)}
-	server.setup()
+	server.setup(l)
 	fmt.Println("server is running on port 5092")
 	return http.ListenAndServe(":5092", nil)
 }

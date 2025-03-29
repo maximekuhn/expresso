@@ -2,7 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"io"
 	"log"
+	"log/slog"
 	"os"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -13,7 +15,18 @@ import (
 func main() {
 	db := setupDB()
 	defer db.Close()
-	webapp.Run(db)
+
+	// TODO: should be configurable
+	logFile, err := os.OpenFile("./e2e/logs-test.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		log.Fatalf("failed to open log file: %v", err)
+	}
+	defer logFile.Close()
+	logsOutput := io.MultiWriter(os.Stdout, logFile)
+	l := slog.New(slog.NewJSONHandler(logsOutput, nil))
+
+	webapp.Run(db, l)
+
 }
 
 func setupDB() *sql.DB {

@@ -2,8 +2,12 @@
 
 set -e
 
-if [ -z "db-test.sqlite3" ]; then
+if [ -f "db-test.sqlite3" ]; then
     rm db-test.sqlite3
+fi
+
+if [ -f "logs-test.log" ]; then
+    rm logs-test.log
 fi
 
 cd ..
