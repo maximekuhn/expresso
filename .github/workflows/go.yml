@@ -33,9 +33,6 @@ jobs:
         run: |
           [ $(gofmt -l -s . | wc -l) -eq 0 ] && exit 0 || exit 1
 
-      # check go mod tidy
-      - name: check go mod tidy
-        run: go mod tidy -diff
 
       # check lint
       # templ files must be generated first, otherwise linter will complain
@@ -45,6 +42,10 @@ jobs:
           templ generate
       - name: check lint
         uses: golangci/golangci-lint-action@v6
+        
+      # check go mod tidy (must be done after templ generate)
+      - name: check go mod tidy
+        run: go mod tidy -diff
 
       # check build
       - name: check build
