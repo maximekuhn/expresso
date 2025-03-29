@@ -25,7 +25,9 @@ func main() {
 	logsOutput := io.MultiWriter(os.Stdout, logFile)
 	l := slog.New(slog.NewJSONHandler(logsOutput, nil))
 
-	webapp.Run(db, l)
+	// TODO: handle prod deployment
+	isProd := false
+	webapp.Run(db, l, isProd)
 
 }
 

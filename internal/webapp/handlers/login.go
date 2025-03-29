@@ -13,17 +13,20 @@ import (
 )
 
 type LoginHandler struct {
-	logger       *slog.Logger
-	loginUseCase *usecaseUser.LoginUseCaseHandler
+	logger         *slog.Logger
+	loginUseCase   *usecaseUser.LoginUseCaseHandler
+	cookieProvider auth.CookieProvider
 }
 
 func NewLoginHandler(
 	l *slog.Logger,
 	loginUseCase *usecaseUser.LoginUseCaseHandler,
+	cookieProvider auth.CookieProvider,
 ) *LoginHandler {
 	return &LoginHandler{
-		logger:       l.With(slog.String(logger.LoggerNameField, "LoginHandler")),
-		loginUseCase: loginUseCase,
+		logger:         l.With(slog.String(logger.LoggerNameField, "LoginHandler")),
+		loginUseCase:   loginUseCase,
+		cookieProvider: cookieProvider,
 	}
 }
 
@@ -73,7 +76,7 @@ func (h *LoginHandler) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie := auth.GenerateCookie(res.SessionId, res.ExpiresAt)
+	cookie := h.cookieProvider.Generate(res.SessionId, res.ExpiresAt)
 	http.SetCookie(w, &cookie)
 	w.Header().Add("HX-Redirect", "/")
 	l.Info("user logged in successfully")

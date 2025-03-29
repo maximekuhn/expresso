@@ -22,9 +22,10 @@ type application struct {
 	userService *user.Service
 
 	sessionProvider transaction.SessionProvider
+	cookieProvider  auth.CookieProvider
 }
 
-func newApplication(db *sql.DB) *application {
+func newApplication(db *sql.DB, isProd bool) *application {
 	idProvider := common.IdProvider{}
 	datetimeProvider := common.DatetimeProvider{}
 	sessionProvider := sqlite.NewSqliteSessionProvider(db)
@@ -39,6 +40,11 @@ func newApplication(db *sql.DB) *application {
 	loginUsecaseHandler := usecaseUser.NewLoginUseCaseHandler(sessionProvider, authService, datetimeProvider)
 	createGroupUsecaseHandler := usecaseGroup.NewCreateUseCaseRequestHandler(sessionProvider, groupService)
 
+	cookieProvider := auth.NewLocalhostCookieProvider()
+	if isProd {
+		panic("TODO: handle prod deployment")
+	}
+
 	return &application{
 		registerUsecaseHandler:    registerUseCaseHandler,
 		loginUsecaseHandler:       loginUsecaseHandler,
@@ -46,5 +52,6 @@ func newApplication(db *sql.DB) *application {
 		authService:               authService,
 		userService:               userService,
 		sessionProvider:           sessionProvider,
+		cookieProvider:            cookieProvider,
 	}
 }

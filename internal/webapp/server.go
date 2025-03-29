@@ -20,6 +20,7 @@ func (s *server) setup(l *slog.Logger) {
 	requestIdMw := middleware.NewRequestIdMiddleware()
 	loggerMw := middleware.NewLoggerMiddleware(l)
 	loggedInMw := middleware.NewLoggedInMiddleware(
+		l,
 		s.app.authService,
 		s.app.userService,
 		s.app.sessionProvider,
@@ -30,7 +31,7 @@ func (s *server) setup(l *slog.Logger) {
 	registerHandler := handlers.NewRegisterHandler(l, s.app.registerUsecaseHandler)
 	http.Handle("/register", chain.Middleware(registerHandler))
 
-	loginHandler := handlers.NewLoginHandler(l, s.app.loginUsecaseHandler)
+	loginHandler := handlers.NewLoginHandler(l, s.app.loginUsecaseHandler, s.app.cookieProvider)
 	http.Handle("/login", chain.Middleware(loginHandler))
 
 	indexHandler := handlers.NewIndexHandler(l)
@@ -43,8 +44,8 @@ func handleAssets() {
 
 }
 
-func Run(db *sql.DB, l *slog.Logger) error {
-	server := &server{app: newApplication(db)}
+func Run(db *sql.DB, l *slog.Logger, isProd bool) error {
+	server := &server{app: newApplication(db, isProd)}
 	server.setup(l)
 	fmt.Println("server is running on port 5092")
 	return http.ListenAndServe(":5092", nil)
