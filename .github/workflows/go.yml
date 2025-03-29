@@ -44,10 +44,8 @@ jobs:
 
       # check build
       - name: check build
-        run: |
-          task build
+        run: make
 
       # check test
       - name: check test
-        run: |
-          task test
+        run: go test -v ./...
