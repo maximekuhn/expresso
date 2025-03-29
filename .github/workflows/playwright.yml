@@ -13,15 +13,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+
+    # Go tools
+    - uses: actions/setup-go@v5
+      with:
+        go-version: 1.23
+    - name:  setup templ
+      run: go install github.com/a-h/templ/cmd/templ@v0.3.819
+
+    # Node
     - uses: actions/setup-node@v4
       with:
         node-version: lts/*
     - name: Install dependencies
       run: npm ci
+
+    # Playwright
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
     - name: Run Playwright tests
       run: npx playwright test
+
+    # Upload results
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
