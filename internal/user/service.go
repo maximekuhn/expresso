@@ -34,3 +34,7 @@ func (s *Service) CreateUser(ctx context.Context, name string) (uuid.UUID, error
 	}
 	return id, s.store.Save(ctx, *u)
 }
+
+func (s *Service) Get(ctx context.Context, userID uuid.UUID) (*User, bool, error) {
+	return s.store.GetById(ctx, userID)
+}

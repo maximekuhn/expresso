@@ -45,3 +45,11 @@ type BadCredentialsError struct {
 func (e BadCredentialsError) Error() string {
 	return fmt.Sprintf("BadCredentialsError[UserID=%s]", e.UserID)
 }
+
+type SessionExpiredError struct {
+	SessionID string
+}
+
+func (e SessionExpiredError) Error() string {
+	return fmt.Sprintf("SessionExpiredError[SessionID=%s]", e.SessionID)
+}

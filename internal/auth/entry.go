@@ -36,6 +36,13 @@ func NewEntry(
 	return e, e.validate()
 }
 
+// IsSessionActive returns true if a session is active.
+// A session is considered active if there is a session ID.
+// Warning: it does not check if the session is valid (not expired) !!
+func (e *Entry) IsSessionActive() bool {
+	return e.SessionID != ""
+}
+
 func (e *Entry) validate() error {
 	if e.SessionExpiresAt != nil && e.SessionID == "" {
 		return EntryValidationError{

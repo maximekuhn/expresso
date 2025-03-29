@@ -21,7 +21,13 @@ func (s *server) setup() {
 
 	requestIdMw := middleware.NewRequestIdMiddleware()
 	loggerMw := middleware.NewLoggerMiddleware(l)
+	loggedInMw := middleware.NewLoggedInMiddleware(
+		s.app.authService,
+		s.app.userService,
+		s.app.sessionProvider,
+	)
 	chain := middleware.Chain(requestIdMw, loggerMw)
+	loggedInChain := middleware.Chain(requestIdMw, loggerMw, loggedInMw)
 
 	registerHandler := handlers.NewRegisterHandler(l, s.app.registerUsecaseHandler)
 	http.Handle("/register", chain.Middleware(registerHandler))
@@ -29,6 +35,8 @@ func (s *server) setup() {
 	loginHandler := handlers.NewLoginHandler(l, s.app.loginUsecaseHandler)
 	http.Handle("/login", chain.Middleware(loginHandler))
 
+	indexHandler := handlers.NewIndexHandler(l)
+	http.Handle("/", loggedInChain.Middleware(indexHandler))
 }
 
 func handleAssets() {

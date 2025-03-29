@@ -124,3 +124,40 @@ func (as *AuthStore) GetByEmail(ctx context.Context, email string) (*auth.Entry,
 	}
 	return e, true, nil
 }
+
+func (as *AuthStore) GetBySessionID(ctx context.Context, id string) (*auth.Entry, bool, error) {
+	query := `
+	   SELECT
+	   user_id, hashed_password, email, session_expires_at
+	   FROM e_auth
+	   WHERE session_id = ?
+	   `
+
+	row := sqliteSessionFromCtx(ctx, as.db).QueryRowContext(ctx, query, id)
+
+	var userId uuid.UUID
+	var hashedPassword []byte
+	var email string
+	var sessionExpiresAt sql.NullTime
+
+	if err := row.Scan(&userId, &hashedPassword, &email, &sessionExpiresAt); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, false, nil
+		}
+		return nil, false, err
+	}
+
+	var sExpiresAt *time.Time
+	if sessionExpiresAt.Valid {
+		sExpiresAt = &sessionExpiresAt.Time
+	}
+
+	e, err := auth.NewEntry(email, hashedPassword, userId, id, sExpiresAt)
+	if err != nil {
+		return nil, false, DataCorruptedError{
+			Type:     "auth.Entry",
+			Original: err,
+		}
+	}
+	return e, true, nil
+}

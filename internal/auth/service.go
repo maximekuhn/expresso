@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/google/uuid"
@@ -65,4 +66,27 @@ func (s *Service) CreateSession(ctx context.Context, email, password string) (*E
 		return nil, err
 	}
 	return newEntry, s.store.Update(ctx, *entry, *newEntry)
+}
+
+// IsSessionValid returns the userID and true if the session is valid.
+// If the session is invalid or not found, false is returned.
+// An error with more details might be returned.
+func (s *Service) IsSessionValid(ctx context.Context, c *http.Cookie) (uuid.UUID, bool, error) {
+	sessionId := c.Value
+	entry, found, err := s.store.GetBySessionID(ctx, sessionId)
+	if err != nil {
+		return uuid.UUID{}, false, err
+	}
+	if !found {
+		return uuid.UUID{}, false, nil
+	}
+	if !entry.IsSessionActive() {
+		return uuid.UUID{}, false, nil
+	}
+
+	// session is active, check if it is valid (not expired)
+	if entry.SessionExpiresAt.Before(s.datetimeProvider.Provide()) {
+		return uuid.UUID{}, false, SessionExpiredError{entry.SessionID}
+	}
+	return entry.UserID, true, nil
 }

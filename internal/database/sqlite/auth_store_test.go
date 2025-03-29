@@ -55,6 +55,37 @@ func TestAuthStore_GetByEmailNotFound(t *testing.T) {
 	assert.False(t, found, "should not find an auth entry for email: bill@gmail.com")
 }
 
+func TestAuthStore_GetBySessionIdOk(t *testing.T) {
+	db := createTmpDbWithAllMigrationsApplied()
+	defer db.Close()
+
+	store := NewAuthStore(db)
+	entry := authEntry()
+	err := store.Save(context.TODO(), entry)
+	assert.NoError(t, err)
+
+	entryWithSession := addSessionToEntry(entry)
+	err = store.Update(context.TODO(), entry, entryWithSession)
+	assert.NoError(t, err)
+
+	e, found, err := store.GetBySessionID(context.TODO(), entryWithSession.SessionID)
+	assert.NoError(t, err)
+	assert.True(t, found)
+	assert.Equal(t, *e, entryWithSession)
+}
+
+func TestAuthStore_GetBySessionIdNotFound(t *testing.T) {
+	db := createTmpDbWithAllMigrationsApplied()
+	defer db.Close()
+
+	store := NewAuthStore(db)
+
+	sessionId := uuid.NewString()
+	_, found, err := store.GetBySessionID(context.TODO(), sessionId)
+	assert.NoError(t, err)
+	assert.Falsef(t, found, "should not find an auth entry for sessionId: %s", sessionId)
+}
+
 func TestAuthStore_UpdateOk(t *testing.T) {
 	scenarios := []struct {
 		title               string
@@ -144,4 +175,11 @@ func authEntry() auth.Entry {
 		panic(err)
 	}
 	return *e
+}
+
+func addSessionToEntry(e auth.Entry) auth.Entry {
+	expiresAt := time.Now().UTC().Add(time.Hour * 24)
+	e.SessionID = uuid.NewString()
+	e.SessionExpiresAt = &expiresAt
+	return e
 }
