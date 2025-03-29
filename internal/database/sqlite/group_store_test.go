@@ -49,6 +49,7 @@ func TestGroupStore_SaveNameNotUnique(t *testing.T) {
 		[]byte{1, 2, 3, 4},
 		time.Now(),
 	)
+	assert.NoError(t, err)
 	err = store.Save(context.TODO(), *g)
 	assert.ErrorIs(t, err, group.AnotherGroupWithSameNameAlreadyExistsError{Name: "group 1"})
 }
