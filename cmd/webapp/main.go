@@ -27,8 +27,7 @@ func main() {
 
 	// TODO: handle prod deployment
 	isProd := false
-	webapp.Run(db, l, isProd)
-
+	log.Fatal(webapp.Run(db, l, isProd))
 }
 
 func setupDB() *sql.DB {

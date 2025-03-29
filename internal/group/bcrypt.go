@@ -7,6 +7,6 @@ func hashPassword(p string) ([]byte, error) {
 }
 
 // return true if the password is correct
-func checkPassword(clear string, hash []byte) bool {
-	return bcrypt.CompareHashAndPassword(hash, []byte(clear)) == nil
-}
+// func checkPassword(clear string, hash []byte) bool {
+// 	return bcrypt.CompareHashAndPassword(hash, []byte(clear)) == nil
+// }

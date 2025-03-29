@@ -59,7 +59,7 @@ func (mw *LoggedInMiddleware) Middleware(next http.Handler) http.Handler {
 		var u *user.User
 
 		ctx := r.Context()
-		mw.sessionProvider.Provide(ctx).Transaction(ctx, func(ctx context.Context) error {
+		if err := mw.sessionProvider.Provide(ctx).Transaction(ctx, func(ctx context.Context) error {
 			userID, valid, err := mw.authService.IsSessionValid(ctx, cookie)
 			if err != nil {
 				l.Error("failed to check session validity", slog.String("err", err.Error()))
@@ -80,7 +80,10 @@ func (mw *LoggedInMiddleware) Middleware(next http.Handler) http.Handler {
 			}
 			u = usr
 			return nil
-		})
+		}); err != nil {
+			l.Error("failed to run transaction", slog.String("err", err.Error()))
+			return
+		}
 
 		if u == nil {
 			// no user found or no valid session
