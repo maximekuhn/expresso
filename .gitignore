@@ -1,2 +1,11 @@
 /bin
 /internal/webapp/ui/**/*_templ.go
+
+
+# Playwright
+/e2e/node_modules
+/e2e/db-test.sqlite3
+/e2e/test-results/
+/e2e/playwright-report/
+/e2e/blob-report/
+/e2e/playwright/.cache/
