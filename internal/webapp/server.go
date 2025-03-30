@@ -37,7 +37,7 @@ func (s *server) setup(l *slog.Logger) {
 	indexHandler := handlers.NewIndexHandler(l)
 	http.Handle("/", loggedInChain.Middleware(indexHandler))
 
-	groupHandler := handlers.NewGroupHandler(l, s.app.createGroupUsecaseHandler)
+	groupHandler := handlers.NewGroupHandler(l, s.app.createGroupUsecaseHandler, s.app.listGroupsUsecaseHandler)
 	http.Handle("/groups", loggedInChain.Middleware(groupHandler))
 }
 

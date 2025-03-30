@@ -67,3 +67,11 @@ func jeff() user.User {
 	}
 	return *u
 }
+
+func bill() user.User {
+	u, err := user.New(uuid.New(), "bill", time.Now())
+	if err != nil {
+		panic(err)
+	}
+	return *u
+}

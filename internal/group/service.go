@@ -53,3 +53,15 @@ func (s *Service) CreateGroup(
 	}
 	return s.store.Save(ctx, *g)
 }
+
+func (s *Service) ListGroupOfUser(ctx context.Context, userID uuid.UUID) ([]Group, error) {
+	groupsAsOwner, err := s.store.GetAllWhereUserIsOwner(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	groupsAsMember, err := s.store.GetAllWhereUserIsMember(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return append(groupsAsOwner, groupsAsMember...), nil
+}

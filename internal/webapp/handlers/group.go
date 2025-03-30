@@ -9,26 +9,34 @@ import (
 	"github.com/maximekuhn/expresso/internal/logger"
 	usecaseGroup "github.com/maximekuhn/expresso/internal/usecase/group"
 	"github.com/maximekuhn/expresso/internal/webapp/middleware"
+	"github.com/maximekuhn/expresso/internal/webapp/ui/components/lists"
 )
 
 type GroupHandler struct {
 	logger        *slog.Logger
 	createUseCase *usecaseGroup.CreateUseCaseRequestHandler
+	listUseCase   *usecaseGroup.ListUseCaseRequestHandler
 }
 
 func NewGroupHandler(
 	l *slog.Logger,
 	createUseCase *usecaseGroup.CreateUseCaseRequestHandler,
+	listUseCase *usecaseGroup.ListUseCaseRequestHandler,
 ) *GroupHandler {
 	return &GroupHandler{
 		logger:        l.With(slog.String(logger.LoggerNameField, "GroupHandler")),
 		createUseCase: createUseCase,
+		listUseCase:   listUseCase,
 	}
 }
 
 func (h *GroupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		h.createGroup(w, r)
+		return
+	}
+	if r.Method == http.MethodGet {
+		h.getList(w, r)
 		return
 	}
 	w.WriteHeader(http.StatusMethodNotAllowed)
@@ -55,7 +63,7 @@ func (h *GroupHandler) createGroup(w http.ResponseWriter, r *http.Request) {
 		GroupName: groupname,
 		Password:  password,
 	}); err != nil {
-		h.handleError(l, w, r, err)
+		h.handleCreateError(l, w, r, err)
 		return
 	}
 
@@ -63,7 +71,33 @@ func (h *GroupHandler) createGroup(w http.ResponseWriter, r *http.Request) {
 	l.Info("group created")
 }
 
-func (_ *GroupHandler) handleError(l *slog.Logger, w http.ResponseWriter, r *http.Request, err error) {
+func (h *GroupHandler) getList(w http.ResponseWriter, r *http.Request) {
+	l := logger.UpgradeWithRequestId(r.Context(), middleware.RequestIdKey{}, h.logger)
+
+	loggedUser := extractUserOrReturnInternalError(l, w, r)
+	if loggedUser == nil {
+		return
+	}
+
+	res, err := h.listUseCase.Handle(r.Context(), &usecaseGroup.ListUseCaseRequest{
+		User: loggedUser,
+	})
+	if err != nil {
+		l.Error("failed to retrieve list", slog.String("err", err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	l.Info("found groups", slog.Int("count", len(res.Groups)))
+
+	if err := lists.GroupsList(lists.GroupsFromUseCaseResponse(res)).Render(r.Context(), w); err != nil {
+		l.Error("failed to render lists.GroupsList")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
+
+func (_ *GroupHandler) handleCreateError(l *slog.Logger, w http.ResponseWriter, r *http.Request, err error) {
 	var groupAlreadyExistsError group.GroupAlreadyExistsError
 	if errors.As(err, &groupAlreadyExistsError) {
 		l.Info(

@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/maximekuhn/expresso/internal/group"
+	"github.com/maximekuhn/expresso/internal/user"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -54,12 +55,118 @@ func TestGroupStore_SaveNameNotUnique(t *testing.T) {
 	assert.ErrorIs(t, err, group.AnotherGroupWithSameNameAlreadyExistsError{Name: "group 1"})
 }
 
+func TestGroupStore_GetAllWhereUserIsOwner(t *testing.T) {
+	db := createTmpDbWithAllMigrationsApplied()
+	defer db.Close()
+	store := NewGroupStore(db)
+
+	jeff := jeff()
+	bill := bill()
+
+	group1Empty := createGroup(jeff, "group 1")
+	group2Empty := createGroup(jeff, "group 2")
+	group3Empty := createGroup(bill, "group 3")
+
+	assert.NoError(t, store.Save(context.TODO(), group1Empty))
+	assert.NoError(t, store.Save(context.TODO(), group2Empty))
+	assert.NoError(t, store.Save(context.TODO(), group3Empty))
+
+	groups, err := store.GetAllWhereUserIsOwner(context.TODO(), jeff.ID)
+	assert.NoError(t, err)
+
+	expectedGroups := []group.Group{
+		group1Empty,
+		group2Empty,
+		// group3 is owned by bill, not jeff
+	}
+	assert.ElementsMatch(t, expectedGroups, groups)
+}
+
+func TestGroupStore_GetAllWhereUserIsOwnerEmptyList(t *testing.T) {
+	db := createTmpDbWithAllMigrationsApplied()
+	defer db.Close()
+	store := NewGroupStore(db)
+
+	groups, err := store.GetAllWhereUserIsOwner(context.TODO(), jeff().ID)
+	assert.NoError(t, err)
+	assert.Empty(t, groups)
+}
+
+func TestGroupStore_GetAllWhereUserIsMember(t *testing.T) {
+	db := createTmpDbWithAllMigrationsApplied()
+	defer db.Close()
+	store := NewGroupStore(db)
+
+	jeff := jeff()
+	bill := bill()
+
+	group1 := createGroupWithOneMember(jeff, bill, "group 1")
+	group2 := createGroup(jeff, "group 2")
+	group3 := createGroupWithOneMember(bill, jeff, "group 3")
+
+	assert.NoError(t, store.Save(context.TODO(), group1))
+	assert.NoError(t, store.Save(context.TODO(), group2))
+	assert.NoError(t, store.Save(context.TODO(), group3))
+
+	groups, err := store.GetAllWhereUserIsMember(context.TODO(), jeff.ID)
+	assert.NoError(t, err)
+
+	expectedGroups := []group.Group{
+		group3,
+		// jeff is only member of group 3
+		// he is owner of group 1 and group 2
+	}
+	assert.ElementsMatch(t, expectedGroups, groups)
+}
+
+func TestGroupStore_GetAllWhereUserIsMemberEmptyList(t *testing.T) {
+	db := createTmpDbWithAllMigrationsApplied()
+	defer db.Close()
+	store := NewGroupStore(db)
+
+	groups, err := store.GetAllWhereUserIsMember(context.TODO(), jeff().ID)
+	assert.NoError(t, err)
+	assert.Empty(t, groups)
+}
+
 func group1Empty() group.Group {
 	g, err := group.New(
 		uuid.New(),
 		"group 1",
 		jeff().ID,
 		make([]uuid.UUID, 0),
+		[]byte{7, 2, 12, 23},
+		time.Now(),
+	)
+	if err != nil {
+		panic(err)
+	}
+	return *g
+}
+
+func createGroup(owner user.User, name string) group.Group {
+	g, err := group.New(
+		uuid.New(),
+		name,
+		owner.ID,
+		make([]uuid.UUID, 0),
+		[]byte{7, 2, 12, 23},
+		time.Now(),
+	)
+	if err != nil {
+		panic(err)
+	}
+	return *g
+}
+
+func createGroupWithOneMember(owner, member user.User, name string) group.Group {
+	members := make([]uuid.UUID, 0)
+	members = append(members, member.ID)
+	g, err := group.New(
+		uuid.New(),
+		name,
+		owner.ID,
+		members,
 		[]byte{7, 2, 12, 23},
 		time.Now(),
 	)

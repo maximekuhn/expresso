@@ -17,6 +17,7 @@ type application struct {
 	registerUsecaseHandler    *usecaseUser.RegisterUseCaseHandler
 	loginUsecaseHandler       *usecaseUser.LoginUseCaseHandler
 	createGroupUsecaseHandler *usecaseGroup.CreateUseCaseRequestHandler
+	listGroupsUsecaseHandler  *usecaseGroup.ListUseCaseRequestHandler
 
 	authService *auth.Service
 	userService *user.Service
@@ -39,6 +40,7 @@ func newApplication(db *sql.DB, isProd bool) *application {
 	registerUseCaseHandler := usecaseUser.NewRegisterUseCaseHandler(sessionProvider, authService, userService)
 	loginUsecaseHandler := usecaseUser.NewLoginUseCaseHandler(sessionProvider, authService, datetimeProvider)
 	createGroupUsecaseHandler := usecaseGroup.NewCreateUseCaseRequestHandler(sessionProvider, groupService)
+	listGroupsUsecaseHandler := usecaseGroup.NewListUseCaseRequestHandler(sessionProvider, groupService, userService)
 
 	cookieProvider := auth.NewLocalhostCookieProvider()
 	if isProd {
@@ -49,6 +51,7 @@ func newApplication(db *sql.DB, isProd bool) *application {
 		registerUsecaseHandler:    registerUseCaseHandler,
 		loginUsecaseHandler:       loginUsecaseHandler,
 		createGroupUsecaseHandler: createGroupUsecaseHandler,
+		listGroupsUsecaseHandler:  listGroupsUsecaseHandler,
 		authService:               authService,
 		userService:               userService,
 		sessionProvider:           sessionProvider,

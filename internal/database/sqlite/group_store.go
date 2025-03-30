@@ -3,9 +3,10 @@ package sqlite
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"strings"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/maximekuhn/expresso/internal/group"
 )
 
@@ -20,18 +21,15 @@ func NewGroupStore(db *sql.DB) *GroupStore {
 }
 
 func (gs *GroupStore) Save(ctx context.Context, g group.Group) error {
-	// this function should be used only when creating a group, meaning no
-	// members can be present yet
-	// This breaks a little bit the abstraction, but we don't want to insert members here
-	if len(g.Members) != 0 {
-		return fmt.Errorf("expected group to have 0 member, but found %d", len(g.Members))
-	}
+	dbExecutor := sqliteSessionFromCtx(ctx, gs.db)
+
 	query := `
     INSERT INTO e_group
     (id, name, owner_id, created_at, hashed_password)
     VALUES (?, ?, ?, ?, ?)
     `
-	res, err := sqliteSessionFromCtx(ctx, gs.db).ExecContext(ctx, query, g.ID, g.Name, g.Owner, g.CreatedAt, g.HashedPassword)
+
+	res, err := dbExecutor.ExecContext(ctx, query, g.ID, g.Name, g.Owner, g.CreatedAt, g.HashedPassword)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed: e_group.id") {
 			return group.GroupAlreadyExistsError{ID: g.ID}
@@ -41,5 +39,103 @@ func (gs *GroupStore) Save(ctx context.Context, g group.Group) error {
 		}
 		return err
 	}
+
+	if len(g.Members) > 0 {
+		memberQuery := `INSERT INTO e_group_member (group_id, user_id) VALUES `
+
+		args := make([]interface{}, 0, len(g.Members)*2)
+		placeholders := make([]string, 0, len(g.Members))
+		for _, userID := range g.Members {
+			placeholders = append(placeholders, "(?, ?)")
+			args = append(args, g.ID, userID)
+		}
+
+		memberQuery += strings.Join(placeholders, ", ")
+		_, err = dbExecutor.ExecContext(ctx, memberQuery, args...)
+		if err != nil {
+			return err
+		}
+	}
+
 	return checkRowsAffected(res, 1)
+}
+
+func (gs *GroupStore) GetAllWhereUserIsOwner(ctx context.Context, userID uuid.UUID) ([]group.Group, error) {
+	query := `
+    SELECT id, name, created_at, hashed_password
+    FROM e_group
+    WHERE owner_id = ?
+    `
+
+	rows, err := sqliteSessionFromCtx(ctx, gs.db).db.QueryContext(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	groups := make([]group.Group, 0)
+	for rows.Next() {
+		var id uuid.UUID
+		var name string
+		var createdAt time.Time
+		var hashedPassword []byte
+
+		if err := rows.Scan(&id, &name, &createdAt, &hashedPassword); err != nil {
+			return nil, err
+		}
+
+		// TODO: fetch members
+		g, err := group.New(
+			id,
+			name,
+			userID,
+			make([]uuid.UUID, 0),
+			hashedPassword,
+			createdAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		groups = append(groups, *g)
+	}
+	return groups, nil
+}
+
+func (gs *GroupStore) GetAllWhereUserIsMember(ctx context.Context, userID uuid.UUID) ([]group.Group, error) {
+	query := `
+    SELECT g.id, g.owner_id, g.name, g.created_at, g.hashed_password
+    FROM e_group g
+    LEFT JOIN e_group_member gm ON g.id = gm.group_id
+    WHERE gm.user_id = ?
+    `
+
+	rows, err := sqliteSessionFromCtx(ctx, gs.db).db.QueryContext(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	groups := make([]group.Group, 0)
+	for rows.Next() {
+		var id uuid.UUID
+		var ownerId uuid.UUID
+		var name string
+		var createdAt time.Time
+		var hashedPassword []byte
+
+		if err := rows.Scan(&id, &ownerId, &name, &createdAt, &hashedPassword); err != nil {
+			return nil, err
+		}
+
+		// TODO: fetch other members
+		members := make([]uuid.UUID, 0)
+		members = append(members, userID)
+
+		g, err := group.New(id, name, ownerId, members, hashedPassword, createdAt)
+		if err != nil {
+			return nil, err
+		}
+		groups = append(groups, *g)
+	}
+	return groups, nil
 }
