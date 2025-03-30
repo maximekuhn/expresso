@@ -103,6 +103,14 @@ func TestAuthStore_UpdateOk(t *testing.T) {
 			newSessionID:        "",
 			newSessionExpiresAt: nil,
 		},
+		{
+			title:               "remove session",
+			entry:               addSessionToEntry(authEntry()),
+			newEmail:            "",
+			newHashedPassword:   []byte{},
+			newSessionID:        "",
+			newSessionExpiresAt: nil,
+		},
 	}
 
 	for _, scenario := range scenarios {
@@ -121,14 +129,8 @@ func TestAuthStore_UpdateOk(t *testing.T) {
 			if scenario.newHashedPassword != nil {
 				hp = scenario.newHashedPassword
 			}
-			sId := old.SessionID
-			if scenario.newSessionID != "" {
-				sId = scenario.newSessionID
-			}
-			sExpiresAt := old.SessionExpiresAt
-			if scenario.newSessionExpiresAt != nil {
-				sExpiresAt = scenario.newSessionExpiresAt
-			}
+			sId := scenario.newSessionID
+			sExpiresAt := scenario.newSessionExpiresAt
 
 			new, err := auth.NewEntry(e, hp, old.UserID, sId, sExpiresAt)
 			if err != nil {
@@ -161,6 +163,32 @@ func TestAuthStore_UpdateErr(t *testing.T) {
 	err = store.Update(context.TODO(), entry, *new)
 	assert.Error(t, err)
 	assert.Equal(t, "changing UserID is not supported/forbidden as it is the primary key", err.Error())
+}
+
+func TestAuthStore_GetByUserIdOk(t *testing.T) {
+	db := createTmpDbWithAllMigrationsApplied()
+	defer db.Close()
+
+	store := NewAuthStore(db)
+	entry := authEntry()
+	err := store.Save(context.TODO(), entry)
+	assert.NoError(t, err)
+
+	e, found, err := store.GetByUserID(context.TODO(), entry.UserID)
+	assert.NoError(t, err)
+	assert.True(t, found)
+	assert.Equal(t, *e, entry)
+}
+
+func TestAuthStore_GetByUserIdNotFound(t *testing.T) {
+	db := createTmpDbWithAllMigrationsApplied()
+	defer db.Close()
+
+	store := NewAuthStore(db)
+
+	_, found, err := store.GetByUserID(context.TODO(), uuid.New())
+	assert.NoError(t, err)
+	assert.False(t, found)
 }
 
 func authEntry() auth.Entry {

@@ -57,6 +57,7 @@ func (gs *GroupStore) Save(ctx context.Context, g group.Group) error {
 		}
 	}
 
+	// TODO: same for members query
 	return checkRowsAffected(res, 1)
 }
 
@@ -138,4 +139,62 @@ func (gs *GroupStore) GetAllWhereUserIsMember(ctx context.Context, userID uuid.U
 		groups = append(groups, *g)
 	}
 	return groups, nil
+}
+
+func (gs *GroupStore) GetByGroupName(ctx context.Context, name string) (*group.Group, bool, error) {
+	query := `
+    SELECT g.id, g.owner_id, g.created_at, g.hashed_password, gm.user_id
+    FROM e_group g
+    LEFT JOIN e_group_member gm ON g.id = gm.group_id
+    WHERE g.name = ?
+    `
+
+	rows, err := sqliteSessionFromCtx(ctx, gs.db).db.QueryContext(ctx, query, name)
+	if err != nil {
+		return nil, false, err
+	}
+	defer rows.Close()
+
+	var g *group.Group
+	for rows.Next() {
+		var id uuid.UUID
+		var ownerId uuid.UUID
+		var createdAt time.Time
+		var hashedPassword []byte
+		var memberId uuid.UUID
+
+		if err := rows.Scan(&id, &ownerId, &createdAt, &hashedPassword, &memberId); err != nil {
+			return nil, false, err
+		}
+
+		if g == nil {
+			members := make([]uuid.UUID, 0)
+			members = append(members, memberId)
+			gr, err := group.New(id, name, ownerId, members, hashedPassword, createdAt)
+			if err != nil {
+				return nil, false, err
+			}
+			g = gr
+			continue
+		}
+
+		g.Members = append(g.Members, memberId)
+	}
+
+	if g == nil {
+		return nil, false, nil
+	}
+	return g, true, nil
+}
+
+func (gs *GroupStore) AddMember(ctx context.Context, groupID, userID uuid.UUID) error {
+	query := `
+    INSERT INTO e_group_member (user_id, group_id)
+    VALUES (?, ?)
+    `
+	res, err := sqliteSessionFromCtx(ctx, gs.db).db.ExecContext(ctx, query, userID, groupID)
+	if err != nil {
+		return err
+	}
+	return checkRowsAffected(res, 1)
 }

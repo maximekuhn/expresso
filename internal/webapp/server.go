@@ -34,11 +34,15 @@ func (s *server) setup(l *slog.Logger) {
 	loginHandler := handlers.NewLoginHandler(l, s.app.loginUsecaseHandler, s.app.cookieProvider)
 	http.Handle("/login", chain.Middleware(loginHandler))
 
+	logoutHandler := handlers.NewLogoutHandler(l, s.app.logoutUsecaseHandler, s.app.cookieProvider)
+	http.Handle("/logout", loggedInChain.Middleware(logoutHandler))
+
 	indexHandler := handlers.NewIndexHandler(l)
 	http.Handle("/", loggedInChain.Middleware(indexHandler))
 
-	groupHandler := handlers.NewGroupHandler(l, s.app.createGroupUsecaseHandler, s.app.listGroupsUsecaseHandler)
+	groupHandler := handlers.NewGroupHandler(l, s.app.createGroupUsecaseHandler, s.app.listGroupsUsecaseHandler, s.app.joinGroupUsecaseHandler)
 	http.Handle("/groups", loggedInChain.Middleware(groupHandler))
+	http.Handle("/groups/join", loggedInChain.Middleware(groupHandler))
 }
 
 func handleAssets() {

@@ -16,8 +16,10 @@ import (
 type application struct {
 	registerUsecaseHandler    *usecaseUser.RegisterUseCaseHandler
 	loginUsecaseHandler       *usecaseUser.LoginUseCaseHandler
+	logoutUsecaseHandler      *usecaseUser.LogoutUseCaseHandler
 	createGroupUsecaseHandler *usecaseGroup.CreateUseCaseRequestHandler
 	listGroupsUsecaseHandler  *usecaseGroup.ListUseCaseRequestHandler
+	joinGroupUsecaseHandler   *usecaseGroup.JoinUseCaseRequestHandler
 
 	authService *auth.Service
 	userService *user.Service
@@ -39,8 +41,11 @@ func newApplication(db *sql.DB, isProd bool) *application {
 
 	registerUseCaseHandler := usecaseUser.NewRegisterUseCaseHandler(sessionProvider, authService, userService)
 	loginUsecaseHandler := usecaseUser.NewLoginUseCaseHandler(sessionProvider, authService, datetimeProvider)
+	logoutUsecaseHandler := usecaseUser.NewLogoutUseCaseHandler(sessionProvider, authService)
+
 	createGroupUsecaseHandler := usecaseGroup.NewCreateUseCaseRequestHandler(sessionProvider, groupService)
 	listGroupsUsecaseHandler := usecaseGroup.NewListUseCaseRequestHandler(sessionProvider, groupService, userService)
+	joinGroupUsecaseHandler := usecaseGroup.NewJoinUseCaseRequestHandler(sessionProvider, groupService)
 
 	cookieProvider := auth.NewLocalhostCookieProvider()
 	if isProd {
@@ -50,8 +55,10 @@ func newApplication(db *sql.DB, isProd bool) *application {
 	return &application{
 		registerUsecaseHandler:    registerUseCaseHandler,
 		loginUsecaseHandler:       loginUsecaseHandler,
+		logoutUsecaseHandler:      logoutUsecaseHandler,
 		createGroupUsecaseHandler: createGroupUsecaseHandler,
 		listGroupsUsecaseHandler:  listGroupsUsecaseHandler,
+		joinGroupUsecaseHandler:   joinGroupUsecaseHandler,
 		authService:               authService,
 		userService:               userService,
 		sessionProvider:           sessionProvider,

@@ -2,6 +2,7 @@ package group
 
 import (
 	"context"
+	"slices"
 
 	"github.com/google/uuid"
 	"github.com/maximekuhn/expresso/internal/common"
@@ -64,4 +65,34 @@ func (s *Service) ListGroupOfUser(ctx context.Context, userID uuid.UUID) ([]Grou
 		return nil, err
 	}
 	return append(groupsAsOwner, groupsAsMember...), nil
+}
+
+func (s *Service) JoinGroup(ctx context.Context, userID uuid.UUID, groupname, password string) error {
+	g, found, err := s.store.GetByGroupName(ctx, groupname)
+	if err != nil {
+		return err
+	}
+	if !found {
+		return GroupNotFoundError{GroupName: groupname}
+	}
+	if g.Owner == userID {
+		return AlreadyMemberOfGroupError{
+			GroupName: groupname,
+			GroupID:   g.ID,
+			UserID:    userID,
+			IsOwner:   true,
+		}
+	}
+	if slices.Contains(g.Members, userID) {
+		return AlreadyMemberOfGroupError{
+			GroupName: groupname,
+			GroupID:   g.ID,
+			UserID:    userID,
+			IsOwner:   false,
+		}
+	}
+	if !checkPassword(password, g.HashedPassword) {
+		return IncorrectPasswordError{GroupID: g.ID}
+	}
+	return s.store.AddMember(ctx, g.ID, userID)
 }

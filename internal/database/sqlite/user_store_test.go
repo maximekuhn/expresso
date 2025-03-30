@@ -75,3 +75,11 @@ func bill() user.User {
 	}
 	return *u
 }
+
+func bob() user.User {
+	u, err := user.New(uuid.New(), "bob", time.Now())
+	if err != nil {
+		panic(err)
+	}
+	return *u
+}

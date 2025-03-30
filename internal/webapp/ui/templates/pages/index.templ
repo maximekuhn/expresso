@@ -9,6 +9,7 @@ templ Index() {
 templ indexBody() {
 	<div>
 		<h1>Home</h1>
+		<button hx-post="/logout">Logout</button>
 		<div>
 			<h2>Groups</h2>
 			<div hx-get="/groups" hx-target="this" hx-swap="outerHTML" hx-trigger="load"></div>
@@ -16,6 +17,10 @@ templ indexBody() {
 		<div>
 			<h2>Create group</h2>
 			@forms.CreateGroupForm()
+		</div>
+		<div>
+			<h2>Join group</h2>
+			@forms.JoinGroupForm()
 		</div>
 	</div>
 }

@@ -129,6 +129,48 @@ func TestGroupStore_GetAllWhereUserIsMemberEmptyList(t *testing.T) {
 	assert.Empty(t, groups)
 }
 
+func TestGroupStore_GetByGroupName(t *testing.T) {
+	db := createTmpDbWithAllMigrationsApplied()
+	defer db.Close()
+	store := NewGroupStore(db)
+
+	g := createGroupWithOneMember(jeff(), bill(), "Jeff & Bill group")
+	assert.NoError(t, store.Save(context.TODO(), g))
+
+	gr, found, err := store.GetByGroupName(context.TODO(), g.Name)
+	assert.NoError(t, err)
+	assert.True(t, found)
+	assert.Equal(t, g, *gr)
+}
+
+func TestGroupStore_GetByGroupNameNotFound(t *testing.T) {
+	db := createTmpDbWithAllMigrationsApplied()
+	defer db.Close()
+	store := NewGroupStore(db)
+
+	_, found, err := store.GetByGroupName(context.TODO(), "non existing group name")
+	assert.NoError(t, err)
+	assert.False(t, found)
+}
+
+func TestGroupStore_AddMember(t *testing.T) {
+	db := createTmpDbWithAllMigrationsApplied()
+	defer db.Close()
+	store := NewGroupStore(db)
+
+	g := createGroupWithOneMember(jeff(), bill(), "Jeff & Bill group")
+	assert.NoError(t, store.Save(context.TODO(), g))
+
+	bob := bob()
+	assert.NoError(t, store.AddMember(context.TODO(), g.ID, bob.ID))
+
+	gr, found, err := store.GetByGroupName(context.TODO(), g.Name)
+	assert.NoError(t, err)
+	assert.True(t, found)
+	g.Members = append(g.Members, bob.ID)
+	assert.ElementsMatch(t, g.Members, gr.Members)
+}
+
 func group1Empty() group.Group {
 	g, err := group.New(
 		uuid.New(),

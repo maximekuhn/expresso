@@ -62,12 +62,20 @@ func (as *AuthStore) Update(ctx context.Context, old, new auth.Entry) error {
 
 	if old.SessionID != new.SessionID {
 		updates = append(updates, "session_id = ? ")
-		args = append(args, new.SessionID)
+		if new.SessionID != "" {
+			args = append(args, new.SessionID)
+		} else {
+			args = append(args, nil)
+		}
 	}
 
 	if old.SessionExpiresAt != new.SessionExpiresAt {
 		updates = append(updates, "session_expires_at = ? ")
-		args = append(args, new.SessionExpiresAt.UTC())
+		if new.SessionExpiresAt != nil {
+			args = append(args, new.SessionExpiresAt.UTC())
+		} else {
+			args = append(args, nil)
+		}
 	}
 
 	if len(updates) == 0 {
@@ -153,6 +161,48 @@ func (as *AuthStore) GetBySessionID(ctx context.Context, id string) (*auth.Entry
 	}
 
 	e, err := auth.NewEntry(email, hashedPassword, userId, id, sExpiresAt)
+	if err != nil {
+		return nil, false, DataCorruptedError{
+			Type:     "auth.Entry",
+			Original: err,
+		}
+	}
+	return e, true, nil
+}
+
+func (as *AuthStore) GetByUserID(ctx context.Context, id uuid.UUID) (*auth.Entry, bool, error) {
+	query := `
+	   SELECT
+	   session_id, hashed_password, email, session_expires_at
+	   FROM e_auth
+	   WHERE user_id = ?
+	   `
+
+	row := sqliteSessionFromCtx(ctx, as.db).QueryRowContext(ctx, query, id)
+
+	var sessionId sql.NullString
+	var hashedPassword []byte
+	var email string
+	var sessionExpiresAt sql.NullTime
+
+	if err := row.Scan(&sessionId, &hashedPassword, &email, &sessionExpiresAt); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, false, nil
+		}
+		return nil, false, err
+	}
+
+	var sExpiresAt *time.Time
+	if sessionExpiresAt.Valid {
+		sExpiresAt = &sessionExpiresAt.Time
+	}
+
+	sId := ""
+	if sessionId.Valid {
+		sId = sessionId.String
+	}
+
+	e, err := auth.NewEntry(email, hashedPassword, id, sId, sExpiresAt)
 	if err != nil {
 		return nil, false, DataCorruptedError{
 			Type:     "auth.Entry",

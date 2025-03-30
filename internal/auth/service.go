@@ -90,3 +90,20 @@ func (s *Service) IsSessionValid(ctx context.Context, c *http.Cookie) (uuid.UUID
 	}
 	return entry.UserID, true, nil
 }
+
+func (s *Service) RevokeSession(ctx context.Context, userID uuid.UUID) error {
+	e, found, err := s.store.GetByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if !found {
+		return EntryNotFoundError{
+			Email: "TODO: same with userID",
+		}
+	}
+	newEntry, err := NewEntry(e.Email, e.HashedPassword, e.UserID, "", nil)
+	if err != nil {
+		return err
+	}
+	return s.store.Update(ctx, *e, *newEntry)
+}
