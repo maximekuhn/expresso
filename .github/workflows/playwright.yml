@@ -28,7 +28,7 @@ jobs:
     - name: Install dependencies
       run: |
         npm ci
-        npm ci --prefix /internal/webapp/ui/
+        npm ci --prefix ../internal/webapp/ui/
 
 
     # Playwright
