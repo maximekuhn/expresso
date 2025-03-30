@@ -28,6 +28,13 @@ jobs:
       - run: |
           go install github.com/go-task/task/v3/cmd/task@latest
 
+      # setup node tools (required to build webapp)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - name: Install dependencies
+        run: npm ci --prefix ./internal/webapp/ui
+
       # check fmt
       - name: check fmt
         run: |
