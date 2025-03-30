@@ -6,15 +6,21 @@ templ Page(body templ.Component) {
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<link rel="icon" href="/assets/favicon/favicon.ico" type="image/x-icon"/>
+			<link href="/assets/css/output.css" rel="stylesheet"/>
 			<meta http-equiv="X-UA-Compatible" content="ie=edge"/>
 			<title>Expresso</title>
 			<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
 			<script src="/assets/js/htmx-ext-response-targets.js"></script>
 		</head>
-		<body hx-ext="response-targets">
-			<main>
-				@body
-			</main>
+		<body hx-ext="response-targets" class="flex justify-center bg-neutral">
+			<div class="">
+				<div>
+					<main>
+						@body
+					</main>
+				</div>
+			</div>
 		</body>
 	</html>
 }

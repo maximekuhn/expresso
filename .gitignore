@@ -1,7 +1,6 @@
 /bin
 /internal/webapp/ui/**/*_templ.go
 
-
 # Playwright
 /e2e/node_modules
 /e2e/db-test.sqlite3
@@ -10,3 +9,10 @@
 /e2e/playwright-report/
 /e2e/blob-report/
 /e2e/playwright/.cache/
+
+# Tailwind
+/internal/webapp/ui/node_modules
+/internal/webapp/ui/assets/css/output.css
+
+# MacOS
+.DS_Store
